@@ -1,10 +1,11 @@
 {
   "name": "AnswerMe",
   "version": "1.0.0",
-  "description": "A fun question and answer tv game",
+  "description": "A fun multiplayer tv game",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+	"start": "node server/server.js",
+	"test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
   "license": "ISC",

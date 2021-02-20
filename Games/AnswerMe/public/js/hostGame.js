@@ -17,14 +17,40 @@ socket.on('noGameFound', function(){
    window.location.href = '../../';//Redirect user to 'join game' page
 });
 
-socket.on('gameQuestions', function(data){
+socket.on('typeresponse', function(){ //gamemode 1 
+ clearInterval(timer);
+    document.getElementById('question').innerHTML = "What is your name?";
+    document.getElementById('answer1').style.visibility = "hidden";
+    document.getElementById('answer2').style.visibility = "hidden";
+    document.getElementById('answer3').style.visibility = "hidden";
+    document.getElementById('answer4').style.visibility = "hidden";
+    //var correctAnswer = data.correct;
+    //document.getElementById('playersAnswered').innerHTML = "Players Answered 0 / " + data.playersInGame;
+    updateTimer();
+});
+ 
+socket.on('startvote', function(data){
+	 clearInterval(timer);
     document.getElementById('question').innerHTML = data.q1;
     document.getElementById('answer1').innerHTML = data.a1;
     document.getElementById('answer2').innerHTML = data.a2;
-    document.getElementById('answer3').innerHTML = data.a3;
+    document.getElementById('answer3').innerHTML = data.a3; 
     document.getElementById('answer4').innerHTML = data.a4;
-    var correctAnswer = data.correct;
-    document.getElementById('playersAnswered').innerHTML = "Players Answered 0 / " + data.playersInGame;
+	if(data.a1 != null){
+	document.getElementById('answer1').style.visibility = "visible";
+	}
+		if(data.a2 != null){
+	document.getElementById('answer1').style.visibility = "visible";
+	}
+		if(data.a3 != null){
+	document.getElementById('answer1').style.visibility = "visible";
+	}
+		if(data.a4 != null){
+	document.getElementById('answer1').style.visibility = "visible";
+	}
+
+    //var correctAnswer = data.correct;
+    //document.getElementById('playersAnswered').innerHTML = "Players Answered 0 / " + data.playersInGame;
     updateTimer();
 });
 
@@ -32,17 +58,32 @@ socket.on('updatePlayersAnswered', function(data){
    document.getElementById('playersAnswered').innerHTML = "Players Answered " + data.playersAnswered + " / " + data.playersInGame; 
 });
 
+
+socket.on('responseOver', function(playerData, allResponses){
+    clearInterval(timer);
+ document.getElementById('question').innerHTML = allResponses.toString();
+ viewResponsesCountdown();
+});
+
 socket.on('questionOver', function(playerData, correct){
     clearInterval(timer);
-    var answer1 = 0;
+    
+	var answer1 = 0;
     var answer2 = 0;
     var answer3 = 0;
     var answer4 = 0;
     var total = 0;
+	
     //Hide elements on page
-    document.getElementById('playersAnswered').style.display = "none";
-    document.getElementById('timerText').style.display = "none";
-    
+    //document.getElementById('playersAnswered').style.display = "none";
+    //document.getElementById('timerText').style.display = "none";
+	    document.getElementById('question').innerHTML = "Moving on to next question...";
+    document.getElementById('answer1').style.visibility = "hidden";
+    document.getElementById('answer2').style.visibility = "hidden";
+    document.getElementById('answer3').style.visibility = "hidden";
+    document.getElementById('answer4').style.visibility = "hidden";
+	postVoteCountdown();
+    /*
     //Shows user correct answer with effects on elements
     if(correct == 1){
         document.getElementById('answer2').style.filter = "grayscale(50%)";
@@ -100,7 +141,7 @@ socket.on('questionOver', function(playerData, correct){
     document.getElementById('square4').style.height = answer4 + "px";
     
     document.getElementById('nextQButton').style.display = "block";
-    
+    */
 });
 
 function nextQuestion(){
@@ -126,8 +167,30 @@ function updateTimer(){
     timer = setInterval(function(){
         time -= 1;
         document.getElementById('num').textContent = " " + time;
-        if(time == 0){
+        if(time <= 0){
             socket.emit('timeUp');
+        }
+    }, 1000);
+}
+
+function viewResponsesCountdown(){
+    time = 25;
+    timer = setInterval(function(){
+        time -= 1;
+        document.getElementById('num').textContent = " " + time;
+        if(time <= 0){
+            socket.emit('nextQuestion');
+        }
+    }, 1000);
+}
+
+function postVoteCountdown(){
+    time = 5;
+    timer = setInterval(function(){
+        time -= 1;
+        document.getElementById('num').textContent = " " + time;
+        if(time <= 0){
+            socket.emit('nextQuestion');
         }
     }, 1000);
 }

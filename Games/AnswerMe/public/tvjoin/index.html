@@ -1,21 +1,18 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Join Game</title>
+        <title>Join as Host</title>
 		   <link rel="preconnect" href="https://fonts.gstatic.com">
 <link href="https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap" rel="stylesheet"> 
-        <link rel = "stylesheet" href = "css/index.css">
+        <link rel = "stylesheet" href = "../css/index.css">
 
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
     </head>
     <body>
 	<div id = "container">
-        <h1 id = "title">Join Game</h1>
+        <h1 id = "title">Join Game As Display</h1>
         <form action="/player/">
-                <div class="form-field">
-                    <label id = "label">Display Name</label>
-                    <input id = "name" type = "text" name="name" autofocus/>
-                </div>
+              
                 <br>
                 <div class="form-field">
                     <label id = "label">Game Pin</label>
@@ -23,12 +20,12 @@
                 </div>
                 <br>
                 <div class="form-field">
-                    <button id = "joinButton">Join</button>
+                    <button id = "joinButton">Connect</button>
                 </div>
 				  
         </form>
         <br/>
-        <center><a href = "/create/" id = "host">Host Game</a><a href = "/tvjoin/" id = "host">Join as TV</a><a href = "/help/" id = "host">Help</a></center>
+        <center><a href = "../create/" id = "host">Host Game</a><a href = "../" id = "host">Join as Player</a><a href = "../help/" id = "host">Help</a></center>
 		</div>
     </body>
 </html>
