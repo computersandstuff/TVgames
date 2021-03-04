@@ -40,22 +40,35 @@ io.on('connection', (socket) => {
 
         var game = games.getGame(gamefinder);
 		var playerNames = []
-		console.log(gamefinder);
+		var playersInGame = players.getPlayers(game.hostId);
+		var ready = 0;
+		console.log("players", playersInGame.length);
+		console.log("question", game.gameData.gamequestion);
 	  if (game.gameData.gamequestion == 0) { //is it a type your response round?
 	   //tell host that it is response time
-					io.to(game.pin).emit('typeresponse');
-					
+					setTimeout(function(){
+    	io.to(game.pin).emit('typeresponse');
+					 
 					var gamemode = "response"; //change gamemode value
 					 io.to(game.pin).emit('nextQuestionPlayer', gamemode); //tell players that it is response time
+					
+					 console.log('response time'); 
+					 game.gameData.questionLive = true;
+}, 2000);//wait for clients to connect
 					  
 }else{ //if it's not...
+if(game.gameData.gamequestion <= playersInGame.length){
  console.log('vote time'); 
 var currentresponse = game.gameData.allresponses[game.gameData.gamequestion-1]; //find the current response to vote on
-var playersInGame = players.getPlayers(game.hostId);
+game.gameData.currentcorrectanswer = game.gameData.gamequestion;
+
 for(var i = 0; i < playersInGame.length; i++){
 	playerNames.push(playersInGame[i].name);
+	ready++;
 }
+if(ready >= playersInGame.length){
 io.to(game.pin).emit('startvote', { //tell host that it is voting time
+
                         q1: currentresponse,
 					    a1: playerNames[0],
 						a2: playerNames[1],
@@ -66,11 +79,23 @@ io.to(game.pin).emit('startvote', { //tell host that it is voting time
 						a7: playerNames[6],
 						a8: playerNames[7],
                         //playersInGame: game.playerData.length
+
                     });
+		}			
 					
 var gamemode = "vote"; //change gamemode value
 io.to(game.pin).emit('nextQuestionPlayer', gamemode); //tell players that it is voting time
+	 game.gameData.questionLive = true;
+}else{
+	//move on to next game question
+	//game.gameData.gamequestion == 0;
+	//show results
+	console.log('reveal time'); 
 
+	io.to(game.pin).emit('revealPlayer', game.gameData.allresponses, game.gameData.allresponseplayers); //tell players that it is voting time
+
+
+}
 }
 game.gameData.gamequestion += 1;
 	}
@@ -90,7 +115,9 @@ game.gameData.gamequestion += 1;
                 if(result[0] !== undefined){
                     var gamePin = Math.floor(Math.random()*90000) + 10000; //new pin for game
 					var allresponses = [];
-                    games.addGame(gamePin, socket.id, false, {playersAnswered: 0, questionLive: false, gameid: data.id, gamequestion: 0, question: 1, allresponses}); //Creates a game with pin and host id
+					var allresponseplayers = [];
+					var currentcorrectanswer = 0;
+                    games.addGame(gamePin, socket.id, false, {playersAnswered: 0, questionLive: false, gameid: data.id, gamequestion: 0, question: 1, allresponses, allresponseplayers, currentcorrectanswer}); //Creates a game with pin and host id
 
                     var game = games.getGame(socket.id); //Gets the game data
 
@@ -320,13 +347,13 @@ game.gameData.gamequestion += 1;
             player.gameData.answer = playerresponse;
             game.gameData.playersAnswered += 1;
 			var allresponses = game.gameData.allresponses;
-			
+			var allresponseplayers = game.gameData.allresponseplayers;
             allresponses.push(playerresponse);
-			console.log('All responses ', game.gameData.allresponses); 
-			console.log('Question ', game.gameData.question); 
-			console.log('Question/gamemode ', game.gameData.question); 
+			allresponseplayers.push(player);
+		
+	
 			console.log('EVERYTHING ', game.gameData); 
-			//console.log(allresponses.toString());
+	
             var gameQuestion = game.gameData.question;
             var gameid = game.gameData.gameid;
             
@@ -352,20 +379,38 @@ game.gameData.gamequestion += 1;
 	
     //Sets data in player class to answer from player
     socket.on('playerAnswer', function(num){
+		console.log("Player answered:", num);
         var player = players.getPlayer(socket.id);
         var hostId = player.hostId;
         var playerNum = players.getPlayers(hostId);
         var game = games.getGame(hostId);
-        if(game.gameData.questionLive == true){//if the question is still live
+        //if(game.gameData.questionLive == true){//if the question is still live
             player.gameData.answer = num;
             game.gameData.playersAnswered += 1;
-            
+            console.log("correctanswer:", game.gameData.currentcorrectanswer);
             var gameQuestion = game.gameData.question;
             var gameid = game.gameData.gameid;
-            
-            MongoClient.connect(url, function(err, db){
+            if(num == game.gameData.currentcorrectanswer){
+				//answer is correct
+				player.gameData.score += 100;
+				console.log("Player answered this and was correct:", num);
+				
+			}
+			         if(game.gameData.playersAnswered == playerNum.length){
+                        game.gameData.questionLive = false; //Question has been ended bc players all answered under time
+                        var playerData = players.getPlayers(game.hostId);
+                        io.to(game.pin).emit('questionOver', playerData, correctAnswer);//Tell everyone that question is over
+                    }else{
+                        //update host screen of num players answered
+                        io.to(game.pin).emit('updatePlayersAnswered', {
+                            playersInGame: playerNum.length,
+                            playersAnswered: game.gameData.playersAnswered
+                        });
+                    }
+                    
+           /* MongoClient.connect(url, function(err, db){
                 if (err) throw err;
-    
+				
                 var dbo = db.db('kahootDB');
                 var query = { id:  parseInt(gameid)};
                 dbo.collection("kahootGames").find(query).toArray(function(err, res) {
@@ -393,11 +438,11 @@ game.gameData.gamequestion += 1;
                     
                     db.close();
                 });
-            });
+            }); */
             
             
             
-        }
+        //}
     });
     
     socket.on('getScore', function(){
@@ -460,6 +505,7 @@ game.gameData.gamequestion += 1;
         var gameid = game.gameData.gameid;
             //io.to(game.pin).emit('questionOver', playerData, correctAnswer);
 						advanceGame(socket.id);
+						console.log("NEXT QUESTION WAS TRIGGERED");
 				
             
      
